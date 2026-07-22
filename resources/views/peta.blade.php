@@ -12,6 +12,7 @@
         
         .leaflet-control-layers { border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden;}
         .leaflet-bar { border: none !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; border-radius: 12px !important; overflow: hidden; }
+        .polydraw-layer-panel { display: none !important; } /* Sembunyikan panel internal Polydraw */
         .leaflet-bar a { border-bottom: 1px solid #e2e8f0 !important; color: #475569 !important; }
         .leaflet-bar a:hover { background-color: #f8fafc !important; color: #0f172a !important; }
 
@@ -273,21 +274,24 @@
 
             polydrawControl.on('polydraw:polygon:created', handlePolygonEvent);
             polydrawControl.on('polydraw:polygon:updated', handlePolygonEvent);
-
-            // Handle click on map for marker placement
-            map.on('click', function (e) {
-                const tipe = document.getElementById('item-tipe').value;
-                if (tipe !== 'marker') return;
-
-                document.getElementById('item-lat').value = e.latlng.lat.toFixed(8);
-                document.getElementById('item-lng').value = e.latlng.lng.toFixed(8);
-
-                autoDetectKecamatan(e.latlng.lat, e.latlng.lng);
-
-                if (currentDrawnLayer) map.removeLayer(currentDrawnLayer);
-                currentDrawnLayer = L.marker(e.latlng).addTo(map);
-            });
         }
+
+        function handleMapClick(e) {
+            if (typeof IS_AUTH !== 'undefined' && !IS_AUTH) return;
+            const tipeEl = document.getElementById('item-tipe');
+            if (!tipeEl || tipeEl.value !== 'marker') return;
+
+            document.getElementById('item-lat').value = e.latlng.lat.toFixed(8);
+            document.getElementById('item-lng').value = e.latlng.lng.toFixed(8);
+
+            autoDetectKecamatan(e.latlng.lat, e.latlng.lng);
+
+            if (currentDrawnLayer) map.removeLayer(currentDrawnLayer);
+            currentDrawnLayer = L.marker(e.latlng).addTo(map);
+        }
+
+        // Handle click on map for marker placement
+        map.on('click', handleMapClick);
 
         // ========== LOAD GEOJSON KECAMATAN ==========
         fetch('/geojson/padang-kecamatan-dissolved.geojson')
@@ -311,6 +315,7 @@
                         layer.on('mouseout', function () {
                             this.setStyle({ fillOpacity: 0.15, weight: 3 });
                         });
+                        layer.on('click', handleMapClick);
                     },
                 }).addTo(kecamatanLayer);
             });
@@ -471,6 +476,7 @@
                                 </button>
                             </div>`;
                         }
+                        marker.on('click', handleMapClick);
                         marker.bindPopup(popupHtml);
                         marker.addTo(group);
 
@@ -499,6 +505,7 @@
                                 </button>
                             </div>`;
                         }
+                        polygon.on('click', handleMapClick);
                         polygon.bindPopup(popupHtml);
                         polygon.addTo(group);
                     }
