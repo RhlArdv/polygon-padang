@@ -31,6 +31,7 @@ class UpdateMapItemRequest extends FormRequest
             'polygon_coords.*' => 'array|size:2',
             'polygon_coords.*.0' => 'numeric',
             'polygon_coords.*.1' => 'numeric',
+            'gambar' => 'nullable|image|max:2048',
             'tanggal' => 'nullable|date',
         ];
     }

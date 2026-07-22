@@ -166,6 +166,14 @@
                                 </div>
                             </div>
 
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gambar (Opsional)</label>
+                                <input type="file" id="item-gambar" accept="image/*" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2 px-3">
+                                <div id="gambar-preview-container" class="mt-2 hidden">
+                                    <img id="gambar-preview" class="w-full h-32 object-cover rounded-lg border border-slate-200 shadow-sm" src="" alt="Preview">
+                                </div>
+                            </div>
+
                             <button type="submit" id="item-submit-btn" class="w-full bg-indigo-600 text-white py-3.5 px-4 rounded-xl hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-sm font-extrabold flex items-center justify-center gap-2 mt-2">
                                 Simpan Data
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -634,24 +642,25 @@
             btn.textContent = 'Menyimpan...';
 
             const tipe = document.getElementById('item-tipe').value;
-            const data = {
-                map_layer_id: document.getElementById('item-layer').value,
-                tipe: tipe,
-                judul: document.getElementById('item-judul').value,
-                deskripsi: document.getElementById('item-deskripsi').value,
-                kecamatan_id: document.getElementById('item-kecamatan').value || null,
-                tanggal: document.getElementById('item-tanggal').value || null,
-            };
+            const formData = new FormData();
+            formData.append('map_layer_id', document.getElementById('item-layer').value);
+            formData.append('tipe', tipe);
+            formData.append('judul', document.getElementById('item-judul').value);
+            formData.append('deskripsi', document.getElementById('item-deskripsi').value);
+            if (document.getElementById('item-kecamatan').value) formData.append('kecamatan_id', document.getElementById('item-kecamatan').value);
+            if (document.getElementById('item-tanggal').value) formData.append('tanggal', document.getElementById('item-tanggal').value);
 
             if (tipe === 'marker') {
-                data.latitude = parseFloat(document.getElementById('item-lat').value);
-                data.longitude = parseFloat(document.getElementById('item-lng').value);
-                if (!data.latitude || !data.longitude) {
+                const lat = parseFloat(document.getElementById('item-lat').value);
+                const lng = parseFloat(document.getElementById('item-lng').value);
+                if (!lat || !lng) {
                     alert('Klik peta untuk menentukan koordinat terlebih dahulu.');
                     btn.disabled = false;
                     btn.textContent = 'Simpan Item';
                     return;
                 }
+                formData.append('latitude', lat);
+                formData.append('longitude', lng);
             } else {
                 const polyCoords = document.getElementById('item-polygon-coords').value;
                 if (!polyCoords) {
@@ -660,21 +669,33 @@
                     btn.textContent = 'Simpan Item';
                     return;
                 }
-                data.polygon_coords = JSON.parse(polyCoords);
+                const parsedCoords = JSON.parse(polyCoords);
+                parsedCoords.forEach((ring, i) => {
+                    formData.append(`polygon_coords[${i}][0]`, ring[0]);
+                    formData.append(`polygon_coords[${i}][1]`, ring[1]);
+                });
+            }
+
+            const gambarInput = document.getElementById('item-gambar');
+            if (gambarInput.files.length > 0) {
+                formData.append('gambar', gambarInput.files[0]);
             }
 
             const editId = document.getElementById('item-edit-id').value;
             const url = editId ? `/items/${editId}` : '/items';
-            const method = editId ? 'PUT' : 'POST';
+            
+            // For Laravel to process PUT request with FormData
+            if (editId) {
+                formData.append('_method', 'PUT');
+            }
 
             fetch(url, {
-                method: method,
+                method: 'POST', // Must use POST for FormData, override with _method=PUT
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': CSRF_TOKEN,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify(data),
+                body: formData,
             })
             .then(r => {
                 if (!r.ok) return r.json().then(err => { throw err; });
@@ -715,6 +736,16 @@
             document.getElementById('item-deskripsi').value = foundItem.deskripsi || '';
             document.getElementById('item-kecamatan').value = foundItem.kecamatan_id || '';
             if (foundItem.tanggal) document.getElementById('item-tanggal').value = foundItem.tanggal.split('T')[0];
+            
+            // Image Preview logic
+            const previewContainer = document.getElementById('gambar-preview-container');
+            const previewImg = document.getElementById('gambar-preview');
+            if (foundItem.gambar) {
+                previewImg.src = '/storage/' + foundItem.gambar;
+                previewContainer.classList.remove('hidden');
+            } else {
+                previewContainer.classList.add('hidden');
+            }
 
             if (foundItem.tipe === 'marker') {
                 document.getElementById('item-lat').value = foundItem.latitude;
@@ -756,10 +787,11 @@
         function resetItemForm() {
             document.getElementById('item-edit-id').value = '';
             document.getElementById('item-form').reset();
-            document.getElementById('item-submit-btn').innerHTML = 'Simpan Data <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
             document.getElementById('item-lat').value = '';
             document.getElementById('item-lng').value = '';
             document.getElementById('item-polygon-coords').value = '';
+            document.getElementById('item-submit-btn').textContent = 'Simpan Item';
+            document.getElementById('gambar-preview-container').classList.add('hidden');
             document.getElementById('polygon-status').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Gunakan toolbar polygon di peta untuk menggambar area.';
             document.getElementById('item-tipe').value = 'marker';
             toggleDrawToolbar();

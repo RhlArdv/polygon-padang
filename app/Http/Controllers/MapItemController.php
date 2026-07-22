@@ -14,7 +14,12 @@ class MapItemController extends Controller
      */
     public function store(StoreMapItemRequest $request): JsonResponse
     {
-        $item = MapItem::create($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('gambar')) {
+            $data['gambar'] = $request->file('gambar')->store('map_images', 'public');
+        }
+
+        $item = MapItem::create($data);
         $item->load('mapLayer', 'kecamatan:id,nama_kecamatan');
 
         return response()->json($item, 201);
@@ -25,7 +30,15 @@ class MapItemController extends Controller
      */
     public function update(UpdateMapItemRequest $request, MapItem $mapItem): JsonResponse
     {
-        $mapItem->update($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('gambar')) {
+            if ($mapItem->gambar && \Illuminate\Support\Facades\Storage::disk('public')->exists($mapItem->gambar)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($mapItem->gambar);
+            }
+            $data['gambar'] = $request->file('gambar')->store('map_images', 'public');
+        }
+
+        $mapItem->update($data);
         $mapItem->load('mapLayer', 'kecamatan:id,nama_kecamatan');
 
         return response()->json($mapItem);

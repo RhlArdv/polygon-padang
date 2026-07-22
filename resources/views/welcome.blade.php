@@ -211,8 +211,12 @@
             const dynamicLayers = {}; 
             
             function buildPopup(item, layerData) {
+                const imageHtml = item.gambar 
+                    ? `<img src="/storage/${item.gambar}" alt="Foto Lokasi" class="w-full h-32 object-cover rounded-t-xl">` 
+                    : '';
                 return `
                     <div class="flex flex-col">
+                        ${imageHtml}
                         <div class="p-4" style="background: linear-gradient(135deg, ${layerData.warna}15, ${layerData.warna}30)">
                             <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm mb-3">
                                 <svg class="w-6 h-6" style="color: ${layerData.warna}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -249,7 +253,7 @@
                                 <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                                 <span class="text-xs font-bold text-slate-700">Batas Kecamatan</span>
                             </div>
-                            <input type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20" onchange="if(this.checked) map.addLayer(kecamatanLayer); else map.removeLayer(kecamatanLayer);">
+                            <input type="checkbox" id="base-layer-checkbox" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20">
                         </label>
                     `;
                     listContainer.insertAdjacentHTML('beforeend', baseLayerHtml);
@@ -302,6 +306,11 @@
                     });
 
                     // Checkbox event listeners
+                    document.getElementById('base-layer-checkbox')?.addEventListener('change', function() {
+                        if (this.checked) map.addLayer(kecamatanLayer);
+                        else map.removeLayer(kecamatanLayer);
+                    });
+
                     document.querySelectorAll('.dynamic-layer-checkbox').forEach(cb => {
                         cb.addEventListener('change', function() {
                             const layerId = this.value;
