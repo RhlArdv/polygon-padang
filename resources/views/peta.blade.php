@@ -7,14 +7,28 @@
 
     <style>
         /* Override Leaflet z-index so it doesn't conflict with nav dropdowns */
+        .leaflet-container { font-family: 'Inter', sans-serif; }
         .leaflet-pane { z-index: 1; }
         .leaflet-top, .leaflet-bottom { z-index: 2; }
+        
+        path.leaflet-interactive:focus { outline: none !important; }
+        svg.leaflet-zoom-animated:focus { outline: none !important; }
         
         .leaflet-control-layers { border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden;}
         .leaflet-bar { border: none !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; border-radius: 12px !important; overflow: hidden; }
         .polydraw-layer-panel { display: none !important; } /* Sembunyikan panel internal Polydraw */
         .leaflet-bar a { border-bottom: 1px solid #e2e8f0 !important; color: #475569 !important; }
         .leaflet-bar a:hover { background-color: #f8fafc !important; color: #0f172a !important; }
+
+        @keyframes fadeInTooltip {
+            0% { opacity: 0; }
+            100% { opacity: 0.95; }
+        }
+        .delayed-tooltip {
+            opacity: 0 !important;
+            animation: fadeInTooltip 0.2s ease-in forwards;
+            animation-delay: 0.5s;
+        }
 
         .layer-dot {
             width: 12px;
@@ -181,20 +195,11 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
                             <textarea id="layer-deskripsi" rows="2" class="w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Deskripsi opsional..."></textarea>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipe *</label>
-                                <select id="layer-tipe" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
-                                    <option value="marker">Marker</option>
-                                    <option value="polygon">Polygon</option>
-                                    <option value="both">Keduanya</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Warna *</label>
-                                <input type="color" id="layer-warna" value="#3388ff" class="w-full h-9 border-gray-300 rounded-md shadow-sm cursor-pointer">
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Warna *</label>
+                            <input type="color" id="layer-warna" value="#3388ff" class="w-full h-9 border-gray-300 rounded-md shadow-sm cursor-pointer">
                         </div>
+                        <input type="hidden" id="layer-tipe" value="both">
                         <div class="flex gap-2 pt-2">
                             <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition text-sm font-medium">Simpan</button>
                             <button type="button" onclick="closeLayerModal()" class="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition text-sm font-medium">Batal</button>
@@ -252,7 +257,19 @@
         let currentDrawnLayer = null;
 
         if (IS_AUTH) {
-            polydrawControl = new window.LeafletPolydraw.default();
+            polydrawControl = new window.LeafletPolydraw.default({
+                config: {
+                    polygonTools: {
+                        bbox: { enabled: false },
+                        simplify: { enabled: false },
+                        doubleElbows: { enabled: false },
+                        bezier: { enabled: false },
+                        scale: { enabled: false },
+                        rotate: { enabled: false },
+                        donut: { enabled: false }
+                    }
+                }
+            });
             map.addControl(polydrawControl);
 
             function handlePolygonEvent(e) {
@@ -308,7 +325,7 @@
                     },
                     onEachFeature: (feature, layer) => {
                         const name = feature.properties.nama_kecamatan || feature.properties.district;
-                        layer.bindPopup(`<div class="popup-title">${name}</div><div class="popup-meta">Kecamatan</div>`);
+                        layer.bindTooltip(`<div class="font-bold text-sm text-gray-800">${name}</div><div class="text-xs text-gray-500">Kecamatan</div>`, { sticky: true, direction: 'auto', className: 'bg-white px-3 py-2 border-0 shadow-md rounded-lg delayed-tooltip' });
                         layer.on('mouseover', function () {
                             this.setStyle({ fillOpacity: 0.25, weight: 4 });
                         });
