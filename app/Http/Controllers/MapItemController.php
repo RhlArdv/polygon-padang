@@ -20,7 +20,12 @@ class MapItemController extends Controller
         }
 
         $item = MapItem::create($data);
-        $item->load('mapLayer', 'kecamatan:id,nama_kecamatan');
+        
+        if (isset($data['kecamatan_ids'])) {
+            $item->kecamatans()->sync($data['kecamatan_ids']);
+        }
+
+        $item->load('mapLayer', 'kecamatans:id,nama_kecamatan');
 
         return response()->json($item, 201);
     }
@@ -39,7 +44,14 @@ class MapItemController extends Controller
         }
 
         $mapItem->update($data);
-        $mapItem->load('mapLayer', 'kecamatan:id,nama_kecamatan');
+        
+        if (isset($data['kecamatan_ids'])) {
+            $mapItem->kecamatans()->sync($data['kecamatan_ids']);
+        } else {
+            $mapItem->kecamatans()->sync([]);
+        }
+
+        $mapItem->load('mapLayer', 'kecamatans:id,nama_kecamatan');
 
         return response()->json($mapItem);
     }

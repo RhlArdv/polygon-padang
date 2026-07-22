@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 // Peta publik (Landing Page)
 Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/item/{mapItem}', [PetaController::class, 'show'])->name('item.show');
 
 // API publik (load data untuk Leaflet)
 Route::get('/api/layers', [MapLayerController::class, 'apiIndex'])->name('api.layers.index');
@@ -26,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Map layers
+    Route::get('/admin/layers', [MapLayerController::class, 'index'])->name('layers.index');
     Route::post('/layers', [MapLayerController::class, 'store'])->name('layers.store');
     Route::put('/layers/{mapLayer}', [MapLayerController::class, 'update'])->name('layers.update');
     Route::delete('/layers/{mapLayer}', [MapLayerController::class, 'destroy'])->name('layers.destroy');

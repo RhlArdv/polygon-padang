@@ -157,7 +157,7 @@
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Kecamatan</label>
                                     <select id="item-kecamatan" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5">
-                                        <option value="">Auto-detect...</option>
+                                        <option value="">Auto-detect / Manual</option>
                                     </select>
                                 </div>
                                 <div>
@@ -350,7 +350,6 @@
             .then(r => r.json())
             .then(data => {
                 const select = document.getElementById('item-kecamatan');
-                if (!select) return;
                 data.forEach(k => {
                     const opt = document.createElement('option');
                     opt.value = k.id;
@@ -361,7 +360,6 @@
 
         // ========== POINT-IN-POLYGON ==========
         function pointInPolygon(lat, lng, polygon) {
-            // Ray casting algorithm
             let inside = false;
             for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
                 const xi = polygon[i][0], yi = polygon[i][1];
@@ -391,16 +389,12 @@
                 }
 
                 for (const ring of polygons) {
-                    // GeoJSON is [lng, lat], our function expects [lng, lat] for x, lat for y
                     if (pointInPolygon(lng, lat, ring)) {
                         const name = feature.properties.nama_kecamatan;
-                        // Find matching option
-                        for (const opt of select.options) {
-                            if (opt.textContent === name) {
-                                select.value = opt.value;
-                                return;
-                            }
-                        }
+                        Array.from(select.options).forEach(opt => {
+                            if (opt.textContent.toUpperCase() === name.toUpperCase()) opt.selected = true;
+                        });
+                        return;
                     }
                 }
             }
@@ -463,7 +457,6 @@
         }
 
         function renderMapLayers(layers) {
-            // Remove existing dynamic layers from map and control
             Object.keys(dynamicLayers).forEach(id => {
                 map.removeLayer(dynamicLayers[id]);
                 layerControl.removeLayer(dynamicLayers[id]);
@@ -536,7 +529,6 @@
                     }
                 });
 
-                // Add to layer control with colored dot
                 const label = `<span class="layer-dot" style="background:${layer.warna}"></span> ${layer.nama}`;
                 layerControl.addOverlay(group, label);
             });
@@ -647,7 +639,7 @@
             formData.append('tipe', tipe);
             formData.append('judul', document.getElementById('item-judul').value);
             formData.append('deskripsi', document.getElementById('item-deskripsi').value);
-            if (document.getElementById('item-kecamatan').value) formData.append('kecamatan_id', document.getElementById('item-kecamatan').value);
+            if (document.getElementById('item-kecamatan').value) formData.append('kecamatan_ids[]', document.getElementById('item-kecamatan').value);
             if (document.getElementById('item-tanggal').value) formData.append('tanggal', document.getElementById('item-tanggal').value);
 
             if (tipe === 'marker') {
@@ -684,13 +676,12 @@
             const editId = document.getElementById('item-edit-id').value;
             const url = editId ? `/items/${editId}` : '/items';
             
-            // For Laravel to process PUT request with FormData
             if (editId) {
                 formData.append('_method', 'PUT');
             }
 
             fetch(url, {
-                method: 'POST', // Must use POST for FormData, override with _method=PUT
+                method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': CSRF_TOKEN,
                     'Accept': 'application/json',
@@ -734,10 +725,18 @@
             document.getElementById('item-tipe').value = foundItem.tipe;
             document.getElementById('item-judul').value = foundItem.judul;
             document.getElementById('item-deskripsi').value = foundItem.deskripsi || '';
-            document.getElementById('item-kecamatan').value = foundItem.kecamatan_id || '';
+            
+            const kSelect = document.getElementById('item-kecamatan');
+            Array.from(kSelect.options).forEach(opt => opt.selected = false);
+            if (foundItem.kecamatans && foundItem.kecamatans.length > 0) {
+                const firstId = foundItem.kecamatans[0].id.toString();
+                Array.from(kSelect.options).forEach(opt => {
+                    if (opt.value === firstId) opt.selected = true;
+                });
+            }
+
             if (foundItem.tanggal) document.getElementById('item-tanggal').value = foundItem.tanggal.split('T')[0];
             
-            // Image Preview logic
             const previewContainer = document.getElementById('gambar-preview-container');
             const previewImg = document.getElementById('gambar-preview');
             if (foundItem.gambar) {
@@ -758,7 +757,6 @@
 
             document.getElementById('item-submit-btn').innerHTML = 'Update Data <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
             
-            // Pan to item and show edit marker if possible
             if (foundItem.tipe === 'marker' && foundItem.latitude) {
                 map.setView([foundItem.latitude, foundItem.longitude], 15);
                 if (currentDrawnLayer) map.removeLayer(currentDrawnLayer);

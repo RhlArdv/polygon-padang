@@ -9,12 +9,20 @@ use Illuminate\Http\JsonResponse;
 class MapLayerController extends Controller
 {
     /**
+     * View for admin layer management.
+     */
+    public function index()
+    {
+        return view('layer');
+    }
+
+    /**
      * Return all active layers with their items (public API).
      */
     public function apiIndex(): JsonResponse
     {
         $layers = MapLayer::where('is_active', true)
-            ->with(['items.kecamatan:id,nama_kecamatan'])
+            ->with(['items.kecamatans:id,nama_kecamatan'])
             ->get();
 
         return response()->json($layers);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class MapItem extends Model
 {
@@ -41,8 +42,8 @@ class MapItem extends Model
     /**
      * Get the kecamatan this item belongs to.
      */
-    public function kecamatan(): BelongsTo
+    public function kecamatans(): BelongsToMany
     {
-        return $this->belongsTo(Kecamatan::class);
+        return $this->belongsToMany(Kecamatan::class, 'map_item_kecamatan');
     }
 }

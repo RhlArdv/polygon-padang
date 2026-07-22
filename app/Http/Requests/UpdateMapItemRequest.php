@@ -20,8 +20,9 @@ class UpdateMapItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'map_layer_id' => 'sometimes|required|exists:map_layers,id',
-            'kecamatan_id' => 'nullable|exists:kecamatans,id',
+            'map_layer_id' => 'required|exists:map_layers,id',
+            'kecamatan_ids' => 'nullable|array',
+            'kecamatan_ids.*' => 'exists:kecamatans,id',
             'judul' => 'sometimes|required|string|max:255',
             'deskripsi' => 'nullable|string',
             'tipe' => 'sometimes|required|in:marker,polygon',

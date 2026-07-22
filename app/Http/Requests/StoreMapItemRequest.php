@@ -21,7 +21,8 @@ class StoreMapItemRequest extends FormRequest
     {
         return [
             'map_layer_id' => 'required|exists:map_layers,id',
-            'kecamatan_id' => 'nullable|exists:kecamatans,id',
+            'kecamatan_ids' => 'nullable|array',
+            'kecamatan_ids.*' => 'exists:kecamatans,id',
             'judul' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'tipe' => 'required|in:marker,polygon',
