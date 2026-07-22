@@ -52,6 +52,8 @@
             backdrop-filter: blur(4px);
         }
         .leaflet-tooltip-top:before { border-top-color: rgba(15, 23, 42, 0.85); }
+        
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="antialiased bg-slate-50 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -96,24 +98,81 @@
         </div>
 
         <!-- Map Container (Glassmorphism + Rounded) -->
-        <div class="relative w-full h-[65vh] min-h-[500px] rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-slate-200/60 bg-white">
+        <div id="map-wrapper" class="relative w-full h-[70vh] min-h-[500px] rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-slate-200/60 bg-slate-100" 
+             x-data="mapData()">
+            
             <div id="map"></div>
             
+            <!-- SEARCH BAR (Floating Top Center) -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 z-[400] w-full max-w-sm sm:max-w-md px-4">
+                <div class="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 flex items-center px-4 py-3 transition-shadow focus-within:shadow-2xl">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" x-model="searchQuery" @input="handleSearch" placeholder="Cari lokasi, penyakit, area..." class="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 ml-2 placeholder-slate-400">
+                    
+                    <!-- Search Results Dropdown -->
+                    <div x-show="searchQuery.length > 0" x-transition class="absolute top-[110%] left-0 right-0 bg-white/95 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-2xl max-h-64 overflow-y-auto overflow-x-hidden">
+                        <template x-if="searchResults.length > 0">
+                            <div>
+                                <template x-for="item in searchResults" :key="item.id">
+                                    <div @click="goToItem(item)" class="p-3.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 flex flex-col gap-1.5 transition-colors group">
+                                        <span class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors" x-text="item.judul"></span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full shadow-sm" :style="'background-color: ' + item.layer_warna"></span>
+                                            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider" x-text="item.layer_nama"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="searchQuery.length > 0 && searchResults.length === 0">
+                            <div class="p-5 text-center">
+                                <span class="text-xs font-semibold text-slate-500">Data tidak ditemukan.</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
             <!-- Layer Control Panel (Custom styled) -->
-            <div class="absolute top-4 right-4 z-[400] w-64 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 overflow-hidden" x-data="{ open: true }">
-                <div class="p-3 border-b border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50" @click="open = !open">
+            <div class="absolute top-4 right-4 z-[400] w-64 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 overflow-hidden hidden sm:block">
+                <div class="p-3 border-b border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50" @click="filterOpen = !filterOpen">
                     <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
                         <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                         Filter Layer
                     </h3>
-                    <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="{'rotate-180': filterOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 
-                <div x-show="open" x-transition class="p-3 max-h-[300px] overflow-y-auto" id="custom-layer-list">
+                <div x-show="filterOpen" x-transition class="p-3 max-h-[300px] overflow-y-auto" id="custom-layer-list">
                     <!-- Layer checkboxes will be populated here via JS -->
                     <div class="flex items-center justify-center p-4">
                         <div class="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
+                </div>
+            </div>
+
+        <!-- STATISTICS SECTION (Below Map) -->
+        <div class="mt-4 flex flex-col items-center">
+            <h2 class="text-xl md:text-2xl font-extrabold text-slate-800 mb-6 text-center">Statistik Sebaran Data</h2>
+            <div class="w-full max-w-4xl bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 md:p-8 flex flex-col md:flex-row items-center gap-8">
+                
+                <div class="w-full md:w-1/2 flex flex-col justify-center gap-4">
+                    <p class="text-slate-500 text-sm md:text-base leading-relaxed">
+                        Visualisasi di bawah ini menampilkan proporsi jumlah kasus atau data berdasarkan kategori (layer) yang telah didaftarkan dalam sistem.
+                    </p>
+                    <div class="flex items-center gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                        <div class="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Data Tercatat</div>
+                            <div class="text-2xl font-extrabold text-indigo-700" x-text="allItems.length">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-1/2 relative flex items-center justify-center h-64 md:h-80">
+                    <canvas id="publicCategoryChart"></canvas>
                 </div>
             </div>
         </div>
@@ -131,20 +190,67 @@
         </div>
     </footer>
 
-    <!-- Leaflet JS -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
 
+    <!-- Alpine Component Logic -->
     <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('mapData', () => ({
+                filterOpen: true, 
+                searchQuery: '', 
+                searchResults: [],
+                allItems: [],
+                
+                handleSearch() {
+                    if (this.searchQuery.trim().length < 2) {
+                        this.searchResults = [];
+                        return;
+                    }
+                    const q = this.searchQuery.toLowerCase();
+                    this.searchResults = this.allItems.filter(i => 
+                        (i.judul && i.judul.toLowerCase().includes(q)) || 
+                        (i.deskripsi && i.deskripsi.toLowerCase().includes(q)) ||
+                        (i.layer_nama && i.layer_nama.toLowerCase().includes(q))
+                    ).slice(0, 6);
+                },
+                
+                goToItem(item) {
+                    if (item.tipe === 'marker') {
+                        window.leafletMap.setView([item.latitude, item.longitude], 16);
+                        const marker = window.leafletMarkers[item.id];
+                        if (marker) marker.openPopup();
+                    } else {
+                        const polygon = window.leafletPolygons[item.id];
+                        if (polygon) {
+                            window.leafletMap.fitBounds(polygon.getBounds());
+                            polygon.openPopup();
+                        }
+                    }
+                    this.searchQuery = '';
+                    this.searchResults = [];
+                }
+            }));
+        });
+    </script>
+
+    <script>
+        window.leafletMarkers = {};
+        window.leafletPolygons = {};
+        window.leafletMap = null;
+
         document.addEventListener('DOMContentLoaded', function () {
             const PADANG_CENTER = [-0.95, 100.35];
             
             const map = L.map('map', {
                 center: PADANG_CENTER,
                 zoom: 12,
-                zoomControl: false, // We'll position it manually
+                zoomControl: false, 
                 preferCanvas: true
             });
+            window.leafletMap = map;
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -158,7 +264,6 @@
             // KECAMATAN LAYER (BASE)
             // ==========================================
             const kecamatanLayer = L.layerGroup().addTo(map);
-            let kecamatanGeoJSON = null;
 
             function getKecamatanColor(name) {
                 const cleanName = (name || '').toLowerCase().replace('kecamatan', '').replace('kec.', '').trim();
@@ -179,7 +284,6 @@
             fetch('/geojson/padang-kecamatan-dissolved.geojson')
                 .then(r => r.json())
                 .then(data => {
-                    kecamatanGeoJSON = data;
                     L.geoJSON(data, {
                         style: function(feature) {
                             const name = feature.properties.nama_kecamatan || feature.properties.district || '';
@@ -199,14 +303,13 @@
                                     e.target.setStyle({ fillOpacity: 0.15, weight: 3, color: color });
                                 }
                             });
-                            
                             layer.bindTooltip(name, { className: 'custom-tooltip', direction: 'center' });
                         }
                     }).addTo(kecamatanLayer);
                 });
 
             // ==========================================
-            // DYNAMIC LAYERS
+            // DYNAMIC LAYERS & CHARTS
             // ==========================================
             const dynamicLayers = {}; 
             
@@ -246,6 +349,11 @@
                     const listContainer = document.getElementById('custom-layer-list');
                     listContainer.innerHTML = '';
                     
+                    let allItemsList = [];
+                    let chartLabels = [];
+                    let chartData = [];
+                    let chartColors = [];
+
                     // Add Base Kecamatan checkbox
                     const baseLayerHtml = `
                         <label class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 cursor-pointer group transition">
@@ -260,11 +368,23 @@
 
                     // Add dynamic layers
                     layers.forEach(l => {
+                        // Data for Chart
+                        if (l.items.length > 0) {
+                            chartLabels.push(l.nama);
+                            chartData.push(l.items.length);
+                            chartColors.push(l.warna);
+                        }
+
                         const lg = L.layerGroup();
                         if (l.is_active) lg.addTo(map);
                         dynamicLayers[l.id] = lg;
 
                         l.items.forEach(item => {
+                            // Inject layer data into item for search
+                            item.layer_nama = l.nama;
+                            item.layer_warna = l.warna;
+                            allItemsList.push(item);
+
                             let leafletObj;
                             if (item.tipe === 'marker') {
                                 const customIcon = L.divIcon({
@@ -280,17 +400,19 @@
                                     iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -28]
                                 });
                                 leafletObj = L.marker([item.latitude, item.longitude], { icon: customIcon });
+                                window.leafletMarkers[item.id] = leafletObj;
                             } else {
                                 leafletObj = L.polygon(item.polygon_coords, {
                                     color: l.warna, weight: 3, opacity: 0.8, fillColor: l.warna, fillOpacity: 0.4
                                 });
+                                window.leafletPolygons[item.id] = leafletObj;
                             }
 
                             leafletObj.bindPopup(buildPopup(item, l));
                             leafletObj.addTo(lg);
                         });
 
-                        // Add to UI
+                        // Add to UI Filter List
                         const checkedAttr = l.is_active ? 'checked' : '';
                         const html = `
                             <label class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 cursor-pointer group transition border-t border-slate-100">
@@ -304,6 +426,45 @@
                         `;
                         listContainer.insertAdjacentHTML('beforeend', html);
                     });
+
+                    // Update Alpine state for Search
+                    const mapWrapper = document.getElementById('map-wrapper');
+                    if (mapWrapper && mapWrapper.__x) {
+                        mapWrapper.__x.$data.allItems = allItemsList;
+                    }
+
+                    // Render Chart.js
+                    const ctx = document.getElementById('publicCategoryChart');
+                    if (ctx && chartData.length > 0) {
+                        Chart.defaults.font.family = "'Figtree', sans-serif";
+                        new Chart(ctx.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: chartLabels,
+                                datasets: [{
+                                    data: chartData,
+                                    backgroundColor: chartColors,
+                                    borderWidth: 0,
+                                    hoverOffset: 5
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '75%',
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                        padding: 10,
+                                        bodyFont: { size: 12 },
+                                        cornerRadius: 8,
+                                        displayColors: true
+                                    }
+                                }
+                            }
+                        });
+                    }
 
                     // Checkbox event listeners
                     document.getElementById('base-layer-checkbox')?.addEventListener('change', function() {
