@@ -5,6 +5,7 @@ use App\Http\Controllers\MapItemController;
 use App\Http\Controllers\MapLayerController;
 use App\Http\Controllers\PetaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 // Peta publik (Landing Page)
@@ -16,9 +17,7 @@ Route::get('/api/kecamatan', [PetaController::class, 'apiKecamatan'])->name('api
 
 // Area Admin
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/admin/peta', [PetaController::class, 'index'])->name('peta.index');
     
