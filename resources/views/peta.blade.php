@@ -2,7 +2,7 @@
     {{-- Leaflet CSS --}}
     @push('styles')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-polydraw@2.0.2/dist/leaflet-polydraw.css" />
     @endpush
 
     <style>
@@ -214,7 +214,7 @@
 
     {{-- Leaflet JS --}}
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet-polydraw@2.0.2/dist/polydraw.umd.min.js"></script>
 
     <script>
         // ========== CONFIG ==========
@@ -247,52 +247,32 @@
         let kecamatanGeoJSON = null;
 
         // ========== DRAW CONTROL (admin only) ==========
-        let drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-        let drawControl = null;
+        let polydrawControl = null;
         let currentDrawnLayer = null;
 
         if (IS_AUTH) {
-            drawControl = new L.Control.Draw({
-                position: 'topleft',
-                draw: {
-                    polygon: {
-                        allowIntersection: false,
-                        shapeOptions: { color: '#3388ff', weight: 2 },
-                    },
-                    polyline: false,
-                    rectangle: {
-                        shapeOptions: { color: '#3388ff', weight: 2 },
-                    },
-                    circle: false,
-                    circlemarker: false,
-                    marker: false,
-                },
-                edit: {
-                    featureGroup: drawnItems,
-                    remove: true,
-                },
-            });
-            map.addControl(drawControl);
+            polydrawControl = new window.LeafletPolydraw.default();
+            map.addControl(polydrawControl);
 
-            // Handle polygon drawn
-            map.on(L.Draw.Event.CREATED, function (e) {
-                if (currentDrawnLayer) {
-                    drawnItems.removeLayer(currentDrawnLayer);
-                }
-                currentDrawnLayer = e.layer;
-                drawnItems.addLayer(currentDrawnLayer);
-
-                const coords = currentDrawnLayer.getLatLngs()[0].map(ll => [ll.lat, ll.lng]);
+            function handlePolygonEvent(e) {
+                const geojson = e.polygon;
+                if (!geojson || !geojson.geometry) return;
+                
+                const geom = geojson.geometry;
+                const rings = geom.type === 'MultiPolygon' ? geom.coordinates[0] : geom.coordinates;
+                const coords = rings[0].map(c => [c[1], c[0]]);
+                
                 document.getElementById('item-polygon-coords').value = JSON.stringify(coords);
                 document.getElementById('polygon-status').innerHTML =
                     `<span class="text-green-600 font-medium">✅ Polygon tergambar (${coords.length} titik)</span>`;
 
-                // Auto-detect kecamatan from polygon centroid
-                const bounds = currentDrawnLayer.getBounds();
+                const bounds = L.geoJSON(geojson).getBounds();
                 const center = bounds.getCenter();
                 autoDetectKecamatan(center.lat, center.lng);
-            });
+            }
+
+            polydrawControl.on('polydraw:polygon:created', handlePolygonEvent);
+            polydrawControl.on('polydraw:polygon:updated', handlePolygonEvent);
 
             // Handle click on map for marker placement
             map.on('click', function (e) {
@@ -303,6 +283,9 @@
                 document.getElementById('item-lng').value = e.latlng.lng.toFixed(8);
 
                 autoDetectKecamatan(e.latlng.lat, e.latlng.lng);
+
+                if (currentDrawnLayer) map.removeLayer(currentDrawnLayer);
+                currentDrawnLayer = L.marker(e.latlng).addTo(map);
             });
         }
 
@@ -607,11 +590,18 @@
         });
 
         // ========== ITEM CRUD ==========
-        document.getElementById('item-tipe')?.addEventListener('change', function () {
-            const isPolygon = this.value === 'polygon';
+        function toggleDrawToolbar() {
+            const tipeEl = document.getElementById('item-tipe');
+            if (!tipeEl) return;
+            const isPolygon = tipeEl.value === 'polygon';
             document.getElementById('marker-fields').style.display = isPolygon ? 'none' : 'block';
             document.getElementById('polygon-fields').style.display = isPolygon ? 'block' : 'none';
-        });
+            if (typeof polydrawControl !== 'undefined' && polydrawControl && polydrawControl.getContainer()) {
+                polydrawControl.getContainer().style.display = isPolygon ? 'block' : 'none';
+            }
+        }
+
+        document.getElementById('item-tipe')?.addEventListener('change', toggleDrawToolbar);
 
         document.getElementById('item-form')?.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -703,22 +693,21 @@
             if (foundItem.tanggal) document.getElementById('item-tanggal').value = foundItem.tanggal.split('T')[0];
 
             if (foundItem.tipe === 'marker') {
-                document.getElementById('marker-fields').style.display = 'block';
-                document.getElementById('polygon-fields').style.display = 'none';
                 document.getElementById('item-lat').value = foundItem.latitude;
                 document.getElementById('item-lng').value = foundItem.longitude;
             } else {
-                document.getElementById('marker-fields').style.display = 'none';
-                document.getElementById('polygon-fields').style.display = 'block';
                 document.getElementById('item-polygon-coords').value = JSON.stringify(foundItem.polygon_coords);
                 document.getElementById('polygon-status').innerHTML = 'Polygon sudah ada. Gambar ulang di peta untuk mengubah.';
             }
+            toggleDrawToolbar();
 
             document.getElementById('item-submit-btn').innerHTML = 'Update Data <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
             
-            // Pan to item if possible
+            // Pan to item and show edit marker if possible
             if (foundItem.tipe === 'marker' && foundItem.latitude) {
                 map.setView([foundItem.latitude, foundItem.longitude], 15);
+                if (currentDrawnLayer) map.removeLayer(currentDrawnLayer);
+                currentDrawnLayer = L.marker([foundItem.latitude, foundItem.longitude]).addTo(map);
             }
         }
 
@@ -749,11 +738,13 @@
             document.getElementById('item-polygon-coords').value = '';
             document.getElementById('polygon-status').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Gunakan toolbar polygon di peta untuk menggambar area.';
             document.getElementById('item-tipe').value = 'marker';
-            document.getElementById('marker-fields').style.display = 'block';
-            document.getElementById('polygon-fields').style.display = 'none';
+            toggleDrawToolbar();
             if (currentDrawnLayer) {
-                drawnItems.removeLayer(currentDrawnLayer);
+                map.removeLayer(currentDrawnLayer);
                 currentDrawnLayer = null;
+            }
+            if (typeof polydrawControl !== 'undefined' && polydrawControl) {
+                polydrawControl.removeAllFeatureGroups();
             }
         }
 
@@ -767,5 +758,6 @@
 
         // ========== INIT ==========
         loadLayers();
+        setTimeout(toggleDrawToolbar, 100); // Initialize toolbar visibility
     </script>
 </x-admin-layout>
