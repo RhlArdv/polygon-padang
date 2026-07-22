@@ -16,6 +16,7 @@ class MapItem extends Model
         'latitude',
         'longitude',
         'polygon_coords',
+        'gambar',
         'tanggal',
     ];
 
