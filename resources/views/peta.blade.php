@@ -9,190 +9,154 @@
         /* Override Leaflet z-index so it doesn't conflict with nav dropdowns */
         .leaflet-pane { z-index: 1; }
         .leaflet-top, .leaflet-bottom { z-index: 2; }
-
-        #map { height: calc(100vh - 4rem); width: 100%; }
-
-        .sidebar {
-            width: 380px;
-            height: calc(100vh - 4rem);
-            overflow-y: auto;
-            scrollbar-width: thin;
-        }
+        
+        .leaflet-control-layers { border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden;}
+        .leaflet-bar { border: none !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; border-radius: 12px !important; overflow: hidden; }
+        .leaflet-bar a { border-bottom: 1px solid #e2e8f0 !important; color: #475569 !important; }
+        .leaflet-bar a:hover { background-color: #f8fafc !important; color: #0f172a !important; }
 
         .layer-dot {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             display: inline-block;
-            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         /* Custom popup styling */
         .leaflet-popup-content-wrapper {
-            border-radius: 8px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f1f5f9;
         }
         .popup-title {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 4px;
+            font-weight: 800;
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: #0f172a;
         }
         .popup-meta {
             font-size: 12px;
-            color: #6b7280;
+            color: #64748b;
+            margin-bottom: 4px;
         }
-        .popup-actions {
-            margin-top: 8px;
-            display: flex;
-            gap: 6px;
-        }
-        .popup-btn {
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            border: 1px solid #d1d5db;
-            background: white;
-            transition: all 0.15s;
-        }
-        .popup-btn:hover { background: #f3f4f6; }
-        .popup-btn-danger { color: #dc2626; border-color: #fca5a5; }
-        .popup-btn-danger:hover { background: #fef2f2; }
-
-        /* Mobile sidebar toggle */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                height: auto;
-                max-height: 60vh;
-                z-index: 50;
-                border-top-left-radius: 16px;
-                border-top-right-radius: 16px;
-                box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-                transform: translateY(calc(100% - 48px));
-                transition: transform 0.3s ease;
-            }
-            .sidebar.open { transform: translateY(0); }
-            .sidebar-handle {
-                display: flex;
-                justify-content: center;
-                padding: 8px;
-                cursor: pointer;
-            }
-            .sidebar-handle-bar {
-                width: 40px;
-                height: 4px;
-                border-radius: 2px;
-                background: #d1d5db;
-            }
-            #map { height: calc(100vh - 4rem); }
-        }
-        @media (min-width: 769px) {
-            .sidebar-handle { display: none; }
-        }
+        
+        /* Modern Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 
-    <div class="flex" style="height: calc(100vh - 4rem);">
-        {{-- Map --}}
-        <div class="flex-1 relative">
-            <div id="map"></div>
+    <div class="h-full flex flex-col lg:flex-row gap-6">
+        {{-- Map Container --}}
+        <div class="flex-1 min-h-[500px] bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 overflow-hidden relative group">
+            <div id="map" class="w-full h-full z-0"></div>
+            <!-- Optional subtle overlay shadow inside map -->
+            <div class="absolute inset-0 pointer-events-none shadow-inner z-10 rounded-3xl border border-black/5"></div>
         </div>
 
         {{-- Sidebar (admin only) --}}
         @auth
-        <div class="sidebar bg-white border-l border-gray-200 flex flex-col" id="sidebar">
-            {{-- Mobile handle --}}
-            <div class="sidebar-handle" onclick="document.getElementById('sidebar').classList.toggle('open')">
-                <div class="sidebar-handle-bar"></div>
-            </div>
-
-            <div class="p-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                    Kelola Peta
-                </h2>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-4 space-y-4">
-                {{-- Layer Management --}}
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Layer</h3>
-                        <button onclick="openLayerModal()" class="text-xs bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 transition">
-                            + Buat Layer
-                        </button>
-                    </div>
-                    <div id="layer-list" class="space-y-1">
-                        <p class="text-sm text-gray-400 italic">Memuat layer...</p>
-                    </div>
+        <div class="w-full lg:w-[420px] flex flex-col gap-4" id="sidebar">
+            <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 flex flex-col h-full overflow-hidden">
+                
+                {{-- Header --}}
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-1">
+                    <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-3">
+                        <div class="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        </div>
+                        Kelola Data Peta
+                    </h2>
+                    <p class="text-xs font-semibold text-slate-500 ml-[52px]">Atur layer dan tambahkan lokasi baru ke sistem.</p>
                 </div>
 
-                <hr class="border-gray-200">
-
-                {{-- Add Item Form --}}
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">Tambah Item</h3>
-                    <form id="item-form" class="space-y-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Layer *</label>
-                            <select id="item-layer" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500" required>
-                                <option value="">Pilih layer...</option>
-                            </select>
+                {{-- Content --}}
+                <div class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                    
+                    {{-- Layer Management --}}
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Daftar Layer</h3>
+                            <button onclick="openLayerModal()" class="text-[11px] font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                                + LAYER BARU
+                            </button>
                         </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipe *</label>
-                            <select id="item-tipe" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500" required>
-                                <option value="marker">Marker (Titik)</option>
-                                <option value="polygon">Polygon (Lekukan)</option>
-                            </select>
+                        <div id="layer-list" class="space-y-2">
+                            <p class="text-sm text-slate-400 italic font-medium">Memuat layer...</p>
                         </div>
+                    </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Judul *</label>
-                            <input type="text" id="item-judul" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Nama item..." required>
-                        </div>
+                    <div class="w-full h-px bg-slate-100"></div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-                            <textarea id="item-deskripsi" rows="2" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Deskripsi opsional..."></textarea>
-                        </div>
-
-                        <div id="marker-fields">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Koordinat <span class="text-gray-400">(klik peta)</span></label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="item-lat" class="border-gray-300 rounded-md shadow-sm text-sm bg-gray-50" placeholder="Latitude" readonly>
-                                <input type="text" id="item-lng" class="border-gray-300 rounded-md shadow-sm text-sm bg-gray-50" placeholder="Longitude" readonly>
+                    {{-- Add Item Form --}}
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4">Input Data Lokasi</h3>
+                        <form id="item-form" class="space-y-4">
+                            <input type="hidden" id="item-edit-id">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Layer *</label>
+                                    <select id="item-layer" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5" required>
+                                        <option value="">Pilih layer...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipe *</label>
+                                    <select id="item-tipe" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5" required>
+                                        <option value="marker">Marker (Titik)</option>
+                                        <option value="polygon">Polygon (Area)</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
 
-                        <div id="polygon-fields" style="display: none;">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Polygon</label>
-                            <div id="polygon-status" class="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-md p-2">
-                                Gunakan toolbar di peta untuk menggambar polygon
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Judul Lokasi *</label>
+                                <input type="text" id="item-judul" class="w-full bg-slate-50 border border-slate-200 text-slate-900 font-bold rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5" placeholder="Masukkan nama tempat..." required>
                             </div>
-                            <input type="hidden" id="item-polygon-coords">
-                        </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label>
-                            <select id="item-kecamatan" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">Auto-detect / Manual</option>
-                            </select>
-                        </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                                <textarea id="item-deskripsi" rows="3" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5" placeholder="Detail tambahan (opsional)..."></textarea>
+                            </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                            <input type="date" id="item-tanggal" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
+                            <div id="marker-fields" class="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                                <label class="block text-[11px] font-bold text-indigo-800 uppercase tracking-wider mb-2">Koordinat Marker <span class="text-indigo-400 font-normal lowercase">(Klik titik di peta)</span></label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <input type="text" id="item-lat" class="w-full bg-white border border-indigo-100 rounded-lg text-sm text-slate-600 py-2 focus:outline-none cursor-not-allowed" placeholder="Latitude" readonly>
+                                    <input type="text" id="item-lng" class="w-full bg-white border border-indigo-100 rounded-lg text-sm text-slate-600 py-2 focus:outline-none cursor-not-allowed" placeholder="Longitude" readonly>
+                                </div>
+                            </div>
 
-                        <button type="submit" id="item-submit-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition text-sm font-medium flex items-center justify-center gap-2">
-                            Simpan Item
-                        </button>
-                    </form>
+                            <div id="polygon-fields" style="display: none;" class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                                <label class="block text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-2">Koordinat Polygon</label>
+                                <div id="polygon-status" class="text-xs text-emerald-700 font-medium flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Gunakan toolbar polygon di peta untuk menggambar area.
+                                </div>
+                                <input type="hidden" id="item-polygon-coords">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Kecamatan</label>
+                                    <select id="item-kecamatan" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5">
+                                        <option value="">Auto-detect...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Input</label>
+                                    <input type="date" id="item-tanggal" class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all py-2.5">
+                                </div>
+                            </div>
+
+                            <button type="submit" id="item-submit-btn" class="w-full bg-indigo-600 text-white py-3.5 px-4 rounded-xl hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-sm font-extrabold flex items-center justify-center gap-2 mt-2">
+                                Simpan Data
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -434,6 +398,7 @@
             fetch('/api/layers')
                 .then(r => r.json())
                 .then(layers => {
+                    window.cachedLayers = layers; // Save for editing items
                     renderLayerList(layers);
                     renderLayerSelect(layers);
                     renderMapLayers(layers);
@@ -512,8 +477,12 @@
                         if (item.kecamatan) popupHtml += `<div class="popup-meta flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> ${item.kecamatan.nama_kecamatan}</div>`;
                         if (item.tanggal) popupHtml += `<div class="popup-meta flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> ${item.tanggal.split('T')[0]}</div>`;
                         if (IS_AUTH) {
-                            popupHtml += `<div class="popup-actions mt-2">
-                                <button class="w-full text-center text-xs font-bold text-white bg-red-500 hover:bg-red-600 py-1.5 rounded-md flex items-center justify-center gap-1" onclick="deleteItem(${item.id})">
+                            popupHtml += `<div class="popup-actions mt-2 flex gap-2">
+                                <button class="flex-1 text-center text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 py-1.5 rounded-md flex items-center justify-center gap-1" onclick="editItem(${item.id})">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    Edit
+                                </button>
+                                <button class="flex-1 text-center text-xs font-bold text-white bg-red-500 hover:bg-red-600 py-1.5 rounded-md flex items-center justify-center gap-1" onclick="deleteItem(${item.id})">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     Hapus
                                 </button>
@@ -536,8 +505,12 @@
                         if (item.deskripsi) popupHtml += `<div class="popup-meta">${item.deskripsi}</div>`;
                         if (item.kecamatan) popupHtml += `<div class="popup-meta flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> ${item.kecamatan.nama_kecamatan}</div>`;
                         if (IS_AUTH) {
-                            popupHtml += `<div class="popup-actions mt-2">
-                                <button class="w-full text-center text-xs font-bold text-white bg-red-500 hover:bg-red-600 py-1.5 rounded-md flex items-center justify-center gap-1" onclick="deleteItem(${item.id})">
+                            popupHtml += `<div class="popup-actions mt-2 flex gap-2">
+                                <button class="flex-1 text-center text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 py-1.5 rounded-md flex items-center justify-center gap-1" onclick="editItem(${item.id})">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    Edit
+                                </button>
+                                <button class="flex-1 text-center text-xs font-bold text-white bg-red-500 hover:bg-red-600 py-1.5 rounded-md flex items-center justify-center gap-1" onclick="deleteItem(${item.id})">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     Hapus
                                 </button>
@@ -676,8 +649,12 @@
                 data.polygon_coords = JSON.parse(polyCoords);
             }
 
-            fetch('/items', {
-                method: 'POST',
+            const editId = document.getElementById('item-edit-id').value;
+            const url = editId ? `/items/${editId}` : '/items';
+            const method = editId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': CSRF_TOKEN,
@@ -690,7 +667,7 @@
                 return r.json();
             })
             .then(() => {
-                showToast('Item berhasil ditambahkan');
+                showToast(editId ? 'Item berhasil diupdate' : 'Item berhasil ditambahkan');
                 resetItemForm();
                 loadLayers();
             })
@@ -703,9 +680,47 @@
             })
             .finally(() => {
                 btn.disabled = false;
-                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Simpan Item';
+                btn.innerHTML = 'Simpan Data <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
             });
         });
+
+        function editItem(id) {
+            let foundItem = null;
+            if (window.cachedLayers) {
+                window.cachedLayers.forEach(l => {
+                    const i = l.items.find(x => x.id === id);
+                    if (i) foundItem = i;
+                });
+            }
+            if (!foundItem) return;
+
+            document.getElementById('item-edit-id').value = foundItem.id;
+            document.getElementById('item-layer').value = foundItem.map_layer_id;
+            document.getElementById('item-tipe').value = foundItem.tipe;
+            document.getElementById('item-judul').value = foundItem.judul;
+            document.getElementById('item-deskripsi').value = foundItem.deskripsi || '';
+            document.getElementById('item-kecamatan').value = foundItem.kecamatan_id || '';
+            if (foundItem.tanggal) document.getElementById('item-tanggal').value = foundItem.tanggal.split('T')[0];
+
+            if (foundItem.tipe === 'marker') {
+                document.getElementById('marker-fields').style.display = 'block';
+                document.getElementById('polygon-fields').style.display = 'none';
+                document.getElementById('item-lat').value = foundItem.latitude;
+                document.getElementById('item-lng').value = foundItem.longitude;
+            } else {
+                document.getElementById('marker-fields').style.display = 'none';
+                document.getElementById('polygon-fields').style.display = 'block';
+                document.getElementById('item-polygon-coords').value = JSON.stringify(foundItem.polygon_coords);
+                document.getElementById('polygon-status').innerHTML = 'Polygon sudah ada. Gambar ulang di peta untuk mengubah.';
+            }
+
+            document.getElementById('item-submit-btn').innerHTML = 'Update Data <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            
+            // Pan to item if possible
+            if (foundItem.tipe === 'marker' && foundItem.latitude) {
+                map.setView([foundItem.latitude, foundItem.longitude], 15);
+            }
+        }
 
         function deleteItem(id) {
             if (!confirm('Hapus item ini?')) return;
@@ -726,11 +741,13 @@
         }
 
         function resetItemForm() {
+            document.getElementById('item-edit-id').value = '';
             document.getElementById('item-form').reset();
+            document.getElementById('item-submit-btn').innerHTML = 'Simpan Data <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
             document.getElementById('item-lat').value = '';
             document.getElementById('item-lng').value = '';
             document.getElementById('item-polygon-coords').value = '';
-            document.getElementById('polygon-status').innerHTML = 'Gunakan toolbar di peta untuk menggambar polygon ✏️';
+            document.getElementById('polygon-status').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Gunakan toolbar polygon di peta untuk menggambar area.';
             document.getElementById('item-tipe').value = 'marker';
             document.getElementById('marker-fields').style.display = 'block';
             document.getElementById('polygon-fields').style.display = 'none';
