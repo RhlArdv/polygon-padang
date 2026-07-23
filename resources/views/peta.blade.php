@@ -370,6 +370,13 @@
             attribution: '&copy; Google Maps'
         }).addTo(map);
 
+        // Override default Leaflet path style to make drawing lines VERY visible (Bright Red)
+        // (Layers like kecamatan and dynamic data explicitly set their own colors, so they won't be affected)
+        L.Path.prototype.options.color = '#ff0044';
+        L.Path.prototype.options.weight = 4;
+        L.Path.prototype.options.fillColor = '#ff0044';
+        L.Path.prototype.options.fillOpacity = 0.4;
+
         // ========== LAYER GROUPS ==========
         const kecamatanLayer = L.layerGroup().addTo(map);
         const dynamicLayers = {}; // { layerId: L.layerGroup }
@@ -394,6 +401,20 @@
                         scale: { enabled: false },
                         rotate: { enabled: false },
                         donut: { enabled: false }
+                    },
+                    styles: {
+                        polyline: {
+                            weight: 4,
+                            opacity: 1,
+                            color: "#ff0044"
+                        },
+                        polygon: {
+                            weight: 4,
+                            opacity: 1,
+                            fillOpacity: 0.2,
+                            color: "#ff0044",
+                            fillColor: "#ff0044"
+                        }
                     }
                 }
             });
