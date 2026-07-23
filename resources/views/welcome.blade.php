@@ -392,15 +392,15 @@
             function detectKecamatans(item) {
                 if (!kecamatanGeoJSON) return 'Tidak diketahui';
                 let matchedNames = [];
-                
+
                 if (item.tipe === 'polygon' && item.polygon_coords) {
                     const itemPoints = item.polygon_coords; // array of [lat, lng]
-                    
+
                     kecamatanGeoJSON.features.forEach(feature => {
                         const geom = feature.geometry;
                         const rings = geom.type === 'MultiPolygon' ? geom.coordinates[0] : geom.coordinates;
                         const polyCoords = rings[0].map(c => [c[1], c[0]]); // [lat, lng]
-                        
+
                         for (const point of itemPoints) {
                             if (pointInPolygon(point[0], point[1], polyCoords)) {
                                 matchedNames.push(feature.properties.nama_kecamatan || feature.properties.district);
@@ -418,7 +418,7 @@
                         }
                     });
                 }
-                
+
                 return matchedNames.length > 0 ? matchedNames.join(', ') : 'Tidak diketahui';
             }
 
@@ -429,7 +429,7 @@
 
             function buildPopup(item, layerData) {
                 let kecamatans = 'Tidak diketahui';
-                
+
                 if (item.kecamatans && item.kecamatans.length > 0) {
                     // Use DB relation if available
                     kecamatans = item.kecamatans.map(k => k.nama_kecamatan).join(', ');
@@ -526,7 +526,7 @@
                                 window.leafletPolygons[item.id] = leafletObj;
                             }
 
-                            leafletObj.bindPopup(function() { return buildPopup(item, l); });
+                            leafletObj.bindPopup(function () { return buildPopup(item, l); });
                             leafletObj.addTo(lg);
                         });
 
